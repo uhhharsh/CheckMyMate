@@ -3,12 +3,13 @@
  * @see https://v0.dev/t/1ADs2FRNaQg
  * Documentation: https://v0.dev/docs#integrating-generated-code-into-your-nextjs-app
  */
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import Link from "next/link"
 
-export default function Component() {
+export default function login() {
   return (
     <Card className="mx-auto max-w-sm">
       <CardHeader className="space-y-1">
@@ -30,15 +31,14 @@ export default function Component() {
           </Button>
         </div>
       </CardContent>
-      <div className="text-center">
-            <p className="text-grey-dark text-sm">
-            Don't have an account?{" "}
-            <a href="#" className="no-underline text-blue font-bold">
-                Sign up
-            </a>
-            .
-            </p>
-       </div>
+      <CardFooter className="text-center">
+        <p className="text-sm">
+          Don&apos;t have an account?{" "}
+          <Link href="/signup" className="text-blue-600 hover:underline">
+            Sign up
+          </Link>
+        </p>
+      </CardFooter>
     </Card>
   )
 }
