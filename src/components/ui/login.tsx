@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 
-export default function login() {
+export default function Login() {
   return (
     <Card className="mx-auto max-w-sm">
       <CardHeader className="space-y-1">
