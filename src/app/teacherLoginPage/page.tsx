@@ -13,7 +13,7 @@ export default function LoginPage() {
       </div>
       <div className='flex flex-col items-center justify-center min-h-screen'>
         <div className="flex items-center justify-center">
-          <Login title={"Student Login"}/>
+          <Login title={"Teacher Login"} />
         </div>
       </div>
     </>

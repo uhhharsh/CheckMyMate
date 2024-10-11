@@ -9,11 +9,11 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 
-export default function Login() {
+export default function Login({title} : { title : string }) {
   return (
     <Card className="mx-auto max-w-sm">
       <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold">Login</CardTitle>
+        <CardTitle className="text-2xl font-bold">{title}</CardTitle>
         <CardDescription>Enter your email and password to login to your account</CardDescription>
       </CardHeader>
       <CardContent>

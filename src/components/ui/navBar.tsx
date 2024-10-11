@@ -15,23 +15,25 @@ export default function NavBar() {
         <NavigationMenu>
             <NavigationMenuList>
             <NavigationMenuItem>
-            <Link href="/">
-                <NavigationMenuTrigger className="text-4xl">Home</NavigationMenuTrigger>
-            </Link>
+                <Link href="/">
+                    <NavigationMenuTrigger className="text-4xl">Home</NavigationMenuTrigger>
+                </Link>
                 <NavigationMenuContent>
                 {/* <NavigationMenuLink>Link</NavigationMenuLink> */}
                 </NavigationMenuContent>
             </NavigationMenuItem>
             <NavigationMenuItem>
-            <Link href="/studentLoginPage">
-                <NavigationMenuTrigger className="text-4xl">Student Login</NavigationMenuTrigger>
-            </Link>
+                <Link href="/studentLoginPage">
+                    <NavigationMenuTrigger className="text-4xl">Student Login</NavigationMenuTrigger>
+                </Link>
                 <NavigationMenuContent>
                 {/* <NavigationMenuLink>Link</NavigationMenuLink> */}
                 </NavigationMenuContent>
             </NavigationMenuItem>
             <NavigationMenuItem>
-                <NavigationMenuTrigger className="text-4xl">Teacher Login</NavigationMenuTrigger>
+                <Link href="/teacherLoginPage">
+                    <NavigationMenuTrigger className="text-4xl">Teacher Login</NavigationMenuTrigger>
+                </Link>
                 <NavigationMenuContent>
                 {/* <NavigationMenuLink>Link</NavigationMenuLink> */}
                 </NavigationMenuContent>
