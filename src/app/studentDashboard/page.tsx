@@ -1,3 +1,5 @@
+'use client';
+
 import React from "react";
 import NavBar from "@/components/ui/navBar";
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
@@ -6,7 +8,21 @@ import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 
+import { auth } from "@/firebase/firebaseConfig";
+import { useRouter } from "next/navigation";
+
 export default function StudentDashboard() {
+    const router = useRouter();
+
+    const handleLogout = async () => {
+        try {
+            await auth.signOut();
+            router.push('/');
+        } catch (error) {
+            console.log("Error occured while logging out", error);
+        }
+    }
+
     return (
         <>
         {/* navBar container */}
@@ -18,72 +34,6 @@ export default function StudentDashboard() {
 
         {/* dashboard container */}
         <div className="flex min-h-screen w-full">
-        {/* <aside className="fixed inset-y-0 left-0 z-10 hidden w-14 flex-col border-r bg-background sm:flex">
-            <nav className="flex flex-col items-center gap-4 px-2 sm:py-5">
-            <TooltipProvider>
-                <Link
-                href="#"
-                className="group flex h-9 w-9 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:h-8 md:w-8 md:text-base"
-                prefetch={false}
-                >
-                <div className="h-4 w-4 transition-all group-hover:scale-110" />
-                <span className="sr-only">Acme School</span>
-                </Link>
-                <Tooltip>
-                <TooltipTrigger asChild>
-                    <Link
-                    href="#"
-                    className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-accent-foreground transition-colors hover:text-foreground md:h-8 md:w-8"
-                    prefetch={false}
-                    >
-                    <div className="h-5 w-5" />
-                    <span className="sr-only">Courses</span>
-                    </Link>
-                </TooltipTrigger>
-                <TooltipContent side="right">Courses</TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                <TooltipTrigger asChild>
-                    <Link
-                    href="#"
-                    className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8"
-                    prefetch={false}
-                    >
-                    <div className="h-5 w-5" />
-                    <span className="sr-only">Grades</span>
-                    </Link>
-                </TooltipTrigger>
-                <TooltipContent side="right">Grades</TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                <TooltipTrigger asChild>
-                    <Link
-                    href="#"
-                    className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8"
-                    prefetch={false}
-                    >
-                    <div className="h-5 w-5" />
-                    <span className="sr-only">Schedule</span>
-                    </Link>
-                </TooltipTrigger>
-                <TooltipContent side="right">Schedule</TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                <TooltipTrigger asChild>
-                    <Link
-                    href="#"
-                    className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8"
-                    prefetch={false}
-                    >
-                    <div className="h-5 w-5" />
-                    <span className="sr-only">Settings</span>
-                    </Link>
-                </TooltipTrigger>
-                <TooltipContent side="right">Settings</TooltipContent>
-                </Tooltip>
-            </TooltipProvider>
-            </nav>
-        </aside> */}
         <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-14 w-full">
             <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
             <div className="flex items-center gap-4">
@@ -126,7 +76,7 @@ export default function StudentDashboard() {
                     <DropdownMenuItem>Profile</DropdownMenuItem>
                     <DropdownMenuItem>Settings</DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem>Logout</DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
                 </DropdownMenuContent>
                 </DropdownMenu>
             </div>
