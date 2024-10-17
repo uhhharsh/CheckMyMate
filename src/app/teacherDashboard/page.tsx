@@ -69,7 +69,12 @@ export default function TeacherDashboard() {
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 <Card className="sm:col-span-2">
                 <CardHeader>
-                    <CardTitle>Existing Exams</CardTitle>
+                    <CardTitle>
+                        <div className="flex justify-between item-center">
+                            <div> Existing Exams </div>
+                            <Button>Create Exam</Button>
+                        </div>
+                    </CardTitle>
                     <CardDescription>Your current exams for the semester.</CardDescription>
                 </CardHeader>
                 <CardContent>

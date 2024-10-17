@@ -7,24 +7,63 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 
-import { auth } from "@/firebase/firebaseConfig"
+import { auth, app } from "@/firebase/firebaseConfig"
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { doc, getDoc, setDoc, getFirestore } from 'firebase/firestore';
 
 export default function component({title} : { title : string }) {
 
   const router = useRouter(); // Initialize useRouter
-
+  const db = getFirestore(app);
   const handleGoogle = async () => {
     const provider = new GoogleAuthProvider();
-    await signInWithPopup(auth, provider)
-    .then((result) => {
-      // The signed-in user info.
+    try {
+      const result = await signInWithPopup(auth, provider);
       const user = result.user;
-      console.log(result);
-      router.push('/studentDashboard');
-    }).catch((error) => {
+      console.log("Successfully logged in", user);
+      const userRef = doc(db, 'users', user.uid);
+      const userSnap = await getDoc(userRef);
+      console.log("userRef is", userRef);
+      console.log("userSnap is", userSnap);
+      
+
+      if (userSnap.exists()) {
+        const role = userSnap.data().role;
+        console.log(`${user.email} has role ${role}`);
+        
+        if (role === 'student') {
+          router.push('/studentDashboard');
+        } else if (role === 'teacher') {
+          router.push('/teacherDashboard');
+        }
+      } else {
+        // First time login, assign role manually or through a selection process
+        console.log(`First time login for ${user.email}`);
+        
+        if(title === "student"){
+          await setDoc(userRef, {
+            email: user.email,
+            enrolledCourses: [],
+            name: user.displayName,
+            role: 'student',
+            taughtCourses: []
+          });
+          router.push('/studentDashboard');
+        }
+        else{
+          await setDoc(userRef, {
+            email: user.email,
+            enrolledCourses: [],
+            name: user.displayName,
+            role: 'teacher',
+            taughtCourses: []
+          });
+          router.push('/teacherDashboard');
+        }
+      }
+    } catch (error) {
       console.log("Error logging into google account");
-    });
+    }
   };
 
   return (
