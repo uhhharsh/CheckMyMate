@@ -1,3 +1,5 @@
+'use client'
+
 import React from "react";
 import NavBar from "@/components/ui/navBar";
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
@@ -5,8 +7,11 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
+import CreateExamModal from "@/components/ui/createExamModal";
+import { useState } from 'react';
 
 export default function TeacherDashboard() {
+    const [isModalOpen, setIsModalOpen] = useState(false);
     return (
         <>
         {/* navBar container */}
@@ -64,6 +69,7 @@ export default function TeacherDashboard() {
                 </DropdownMenuContent>
                 </DropdownMenu>
             </div>
+            
             </header>
             <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -72,8 +78,11 @@ export default function TeacherDashboard() {
                     <CardTitle>
                         <div className="flex justify-between item-center">
                             <div> Existing Exams </div>
-                            <Button>Create Exam</Button>
+                            <Button onClick={() => setIsModalOpen(true)}>
+                            Create Exam
+                            </Button>                        
                         </div>
+                        {isModalOpen && <CreateExamModal />}
                     </CardTitle>
                     <CardDescription>Your current exams for the semester.</CardDescription>
                 </CardHeader>
