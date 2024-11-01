@@ -1,8 +1,15 @@
+'use client'
+
 import React from "react";
-import QuestionList from "@/components/ui/questionList";
+import { useSearchParams } from 'next/navigation';
 import NavBar from "@/components/ui/navBar";
+import TeacherQuestionList from "@/components/ui/teacherQuestionList";
 
 export default function Exam() {
+    const searchParams = useSearchParams();
+    const subjectName = searchParams.get('subjectName') || '';
+    const numberOfQuestions = parseInt(searchParams.get('numberOfQuestions') || '1', 10);
+
     return (
         <>
             {/* navBar container */}
@@ -11,7 +18,12 @@ export default function Exam() {
                     <NavBar />
                 </div>
             </div>
-            <QuestionList />
+            
+            {/* Pass props to TeacherQuestionList */}
+            <TeacherQuestionList 
+                subjectName={subjectName} 
+                numberOfQuestions={numberOfQuestions} 
+            />
         </>
     )
 }
