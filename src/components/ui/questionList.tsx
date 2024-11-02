@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { db } from '@/firebase/firebaseConfig';
 import { doc, setDoc } from "firebase/firestore"; 
+import { getAuth } from 'firebase/auth';
 
 interface Question {
   id: number;
@@ -19,11 +20,24 @@ interface Question {
 
 interface QuestionListProps {
   questions: Question[];
+  subjectName: string; // Pass the subject name as a prop
 }
 
-export default function QuestionList({ questions }: QuestionListProps) {
+export default function QuestionList({ questions, subjectName }: QuestionListProps) {
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(questions[0] || null);
   const [answers, setAnswers] = useState<{ [key: number]: string }>({});
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+
+  // Fetch current user email
+  useEffect(() => {
+    const auth = getAuth();
+    const user = auth.currentUser;
+    if (user) {
+      setUserEmail(user.email);
+    } else {
+      console.error("No user is currently logged in.");
+    }
+  }, []);
 
   const handleQuestionClick = (question: Question) => {
     setSelectedQuestion(question);
@@ -36,16 +50,18 @@ export default function QuestionList({ questions }: QuestionListProps) {
   };
 
   const handleSubmit = async () => {
-    if (!selectedQuestion) return;
+    if (!selectedQuestion || !userEmail) return;
 
-    // Logic to store answers in Firestore
-    const userAnswersRef = doc(db, "userAnswers", "currentUserId"); // Adjust user ID accordingly
+    // Construct the document ID as `subjectName:UserEmail`
+    const documentId = `${subjectName}:${userEmail}`;
+    const userAnswersRef = doc(db, "userAnswers", documentId);
 
+    // Save the answer for the selected question
     await setDoc(userAnswersRef, {
-      [selectedQuestion.id]: answers[selectedQuestion.id]
+      [selectedQuestion.id]: answers[selectedQuestion.id],
     }, { merge: true });
     
-    alert("Answers submitted!");
+    alert("Answer submitted!");
   };
 
   return (

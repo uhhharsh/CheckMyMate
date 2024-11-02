@@ -30,7 +30,7 @@ export default function Exam() {
             fetchQuestions().catch(console.error);
         }
     }, [subjectName]);
-    
+
     console.log("hi");
     console.log(questions);
     
@@ -44,7 +44,7 @@ export default function Exam() {
             </div>
             
             {/* Pass questions to QuestionList */}
-            <QuestionList questions={questions} />
+            <QuestionList questions={questions} subjectName={subjectName}/>
         </>
     )
 }
