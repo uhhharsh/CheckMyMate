@@ -9,12 +9,13 @@ import { db } from '@/firebase/firebaseConfig';
 import { doc, setDoc } from "firebase/firestore"; 
 import { getAuth } from 'firebase/auth';
 import axios from 'axios';
+import { useRouter } from 'next/navigation';
 
 interface Question {
   id: number;
   information: string;
   instructions: string;
-  marks: string;
+  predictedMarks: string;
   question: string;
   sample_answer: string;
 }
@@ -28,6 +29,12 @@ export default function QuestionList({ questions, subjectName }: QuestionListPro
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(questions[0] || null);
   const [answers, setAnswers] = useState<{ [key: number]: string }>({});
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const router = useRouter(); // Initialize useRouter for navigation
+
+  const handleEndExam = () => {
+    // Navigate to the student dashboard
+    router.push('/studentDashboard');
+  };
 
   // Fetch current user email
   useEffect(() => {
@@ -78,7 +85,16 @@ export default function QuestionList({ questions, subjectName }: QuestionListPro
           marks: predictedMarks
         }
       }, { merge: true });
-  
+      
+      // Update local state with predicted marks
+      setAnswers((prev) => ({
+        ...prev,
+        [selectedQuestion.id]: answers[selectedQuestion.id],
+      }));
+      setSelectedQuestion((prev) =>
+        prev ? { ...prev, predictedMarks } : prev
+      );
+
       alert("Answer and predicted marks submitted!");
     } catch (error) {
       console.error("Error predicting marks or saving data:", error);
@@ -118,6 +134,11 @@ export default function QuestionList({ questions, subjectName }: QuestionListPro
                 value={answers[selectedQuestion.id] || ''}
                 onChange={handleAnswerChange}
               />
+              {selectedQuestion.predictedMarks !== undefined && (
+                <p className="mt-4 text-green-500">
+                  Predicted Marks: {selectedQuestion.predictedMarks}
+                </p>
+              )}
             </CardContent>
             <CardFooter>
               <Button onClick={handleSubmit}>Submit</Button>
@@ -125,6 +146,15 @@ export default function QuestionList({ questions, subjectName }: QuestionListPro
           </Card>
         )}
       </div>
+
+      {/* End Exam Button */}
+      <Button
+        className="absolute bottom-4 right-4 bg-red-500 text-white hover:bg-red-600"
+        onClick={handleEndExam}
+      >
+        End Exam
+      </Button>
+      
     </div>
   );
 }
