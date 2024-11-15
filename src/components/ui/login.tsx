@@ -21,6 +21,7 @@ export default function component({title} : { title : string }) {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
       console.log("Successfully logged in", user);
+      console.log(user.uid);
       const userRef = doc(db, 'users', user.uid);
       const userSnap = await getDoc(userRef);
       console.log("userRef is", userRef);
@@ -62,7 +63,7 @@ export default function component({title} : { title : string }) {
         }
       }
     } catch (error) {
-      console.log("Error logging into google account");
+      console.log("Error logging into google account : ", error);
     }
   };
 

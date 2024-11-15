@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { db } from '@/firebase/firebaseConfig';
 import { doc, setDoc } from "firebase/firestore"; 
 import { getAuth } from 'firebase/auth';
+import axios from 'axios';
 
 interface Question {
   id: number;
@@ -52,16 +53,37 @@ export default function QuestionList({ questions, subjectName }: QuestionListPro
   const handleSubmit = async () => {
     if (!selectedQuestion || !userEmail) return;
 
-    // Construct the document ID as `subjectName:UserEmail`
-    const documentId = `${subjectName}:${userEmail}`;
-    const userAnswersRef = doc(db, "userAnswers", documentId);
-
-    // Save the answer for the selected question
-    await setDoc(userAnswersRef, {
-      [selectedQuestion.id]: answers[selectedQuestion.id],
-    }, { merge: true });
-    
-    alert("Answer submitted!");
+    try {
+      // Make a POST request to FastAPI to get predicted marks
+      const response = await axios.post("http://127.0.0.1:8000/predict-marks", {
+        subject: subjectName,
+        marks: parseInt(selectedQuestion.marks, 10) || 0,  // Default to 0 if marks is not a valid number
+        sample_answer: selectedQuestion.sample_answer,
+        question: selectedQuestion.question,
+        info: selectedQuestion.information,
+        instructions: [selectedQuestion.instructions]
+      });
+  
+      // Extract predicted marks from FastAPI response
+      const predictedMarks = response.data.predicted_marks;
+  
+      // Construct the document ID as `subjectName:UserEmail`
+      const documentId = `${subjectName}:${userEmail}`;
+      const userAnswersRef = doc(db, "userAnswers", documentId);
+  
+      // Save the answer and predicted marks for the selected question
+      await setDoc(userAnswersRef, {
+        [selectedQuestion.id]: {
+          answer: answers[selectedQuestion.id],
+          marks: predictedMarks
+        }
+      }, { merge: true });
+  
+      alert("Answer and predicted marks submitted!");
+    } catch (error) {
+      console.error("Error predicting marks or saving data:", error);
+      alert("An error occurred while submitting your answer.");
+    }
   };
 
   return (
