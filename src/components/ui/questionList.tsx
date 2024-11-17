@@ -7,15 +7,16 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { db } from '@/firebase/firebaseConfig';
 import { doc, setDoc } from "firebase/firestore"; 
-import { getAuth } from 'firebase/auth';
+import { auth } from '@/firebase/firebaseConfig';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
+import { Dialog, DialogContent, DialogFooter } from "@/components/ui/dialog";
 
 interface Question {
   id: number;
   information: string;
   instructions: string;
-  predictedMarks: string;
+  marks: string;
   question: string;
   sample_answer: string;
 }
@@ -29,16 +30,13 @@ export default function QuestionList({ questions, subjectName }: QuestionListPro
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(questions[0] || null);
   const [answers, setAnswers] = useState<{ [key: number]: string }>({});
   const [userEmail, setUserEmail] = useState<string | null>(null);
-  const router = useRouter(); // Initialize useRouter for navigation
+  const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
+  const [totalMarks, setTotalMarks] = useState<number | null>(null);
 
-  const handleEndExam = () => {
-    // Navigate to the student dashboard
-    router.push('/studentDashboard');
-  };
+  const router = useRouter(); // Initialize useRouter for navigation
 
   // Fetch current user email
   useEffect(() => {
-    const auth = getAuth();
     const user = auth.currentUser;
     if (user) {
       setUserEmail(user.email);
@@ -47,6 +45,14 @@ export default function QuestionList({ questions, subjectName }: QuestionListPro
     }
   }, []);
 
+  const handleEndExam = () => {
+    // Navigate to the student dashboard
+    // router.push('/studentDashboard');
+
+    // Open the dialog on end exam click
+    setIsDialogOpen(true); 
+  };
+  
   const handleQuestionClick = (question: Question) => {
     setSelectedQuestion(question);
   };
@@ -57,48 +63,98 @@ export default function QuestionList({ questions, subjectName }: QuestionListPro
     }
   };
 
-  const handleSubmit = async () => {
-    if (!selectedQuestion || !userEmail) return;
+  // const handleSubmit = async () => {
+  //   if (!selectedQuestion || !userEmail) return;
+
+  //   try {
+  //     // Make a POST request to FastAPI to get predicted marks
+  //     const response = await axios.post("http://127.0.0.1:8000/predict-marks", {
+  //       subject: subjectName,
+  //       marks: parseInt(selectedQuestion.marks, 10) || 0,  // Default to 0 if marks is not a valid number
+  //       sample_answer: selectedQuestion.sample_answer,
+  //       question: selectedQuestion.question,
+  //       info: selectedQuestion.information,
+  //       instructions: [selectedQuestion.instructions]
+  //     });
+  
+  //     // Extract predicted marks from FastAPI response
+  //     const predictedMarks = response.data.predicted_marks;
+  
+  //     // Construct the document ID as `subjectName:UserEmail`
+  //     const documentId = `${subjectName}:${userEmail}`;
+  //     const userAnswersRef = doc(db, "userAnswers", documentId);
+  
+  //     // Save the answer and predicted marks for the selected question
+  //     await setDoc(userAnswersRef, {
+  //       [selectedQuestion.id]: {
+  //         answer: answers[selectedQuestion.id],
+  //         marks: predictedMarks
+  //       }
+  //     }, { merge: true });
+      
+  //     // Update local state with predicted marks
+  //     setAnswers((prev) => ({
+  //       ...prev,
+  //       [selectedQuestion.id]: answers[selectedQuestion.id],
+  //     }));
+  //     setSelectedQuestion((prev) =>
+  //       prev ? { ...prev, predictedMarks } : prev
+  //     );
+
+  //     alert("Answer and predicted marks submitted!");
+  //   } catch (error) {
+  //     console.error("Error predicting marks or saving data:", error);
+  //     alert("An error occurred while submitting your answer.");
+  //   }
+  // };
+
+  const handleSubmitAll = async () => {
+    if (!userEmail) {
+      console.log("Cant find user email");
+      return;
+    } 
 
     try {
-      // Make a POST request to FastAPI to get predicted marks
-      const response = await axios.post("http://127.0.0.1:8000/predict-marks", {
-        subject: subjectName,
-        marks: parseInt(selectedQuestion.marks, 10) || 0,  // Default to 0 if marks is not a valid number
-        sample_answer: selectedQuestion.sample_answer,
-        question: selectedQuestion.question,
-        info: selectedQuestion.information,
-        instructions: [selectedQuestion.instructions]
-      });
-  
-      // Extract predicted marks from FastAPI response
-      const predictedMarks = response.data.predicted_marks;
-  
-      // Construct the document ID as `subjectName:UserEmail`
+      const predictedMarksArray: number[] = [];
       const documentId = `${subjectName}:${userEmail}`;
       const userAnswersRef = doc(db, "userAnswers", documentId);
-  
-      // Save the answer and predicted marks for the selected question
-      await setDoc(userAnswersRef, {
-        [selectedQuestion.id]: {
-          answer: answers[selectedQuestion.id],
-          marks: predictedMarks
-        }
-      }, { merge: true });
-      
-      // Update local state with predicted marks
-      setAnswers((prev) => ({
-        ...prev,
-        [selectedQuestion.id]: answers[selectedQuestion.id],
-      }));
-      setSelectedQuestion((prev) =>
-        prev ? { ...prev, predictedMarks } : prev
-      );
 
-      alert("Answer and predicted marks submitted!");
+      // Collect all answers and predicted marks
+      for (const question of questions) {
+        const response = await axios.post("http://127.0.0.1:8000/predict-marks", {
+          subject: subjectName,
+          marks: question.marks,
+          sample_answer: question.sample_answer,
+          question: question.question,
+          info: question.information,
+          instructions: [question.instructions]
+        });
+
+        const predictedMarks = response.data.predicted_marks;
+        predictedMarksArray.push(predictedMarks);
+
+        // Save the answer and predicted marks for each question
+        await setDoc(userAnswersRef, {
+          [question.id]: {
+            answer: answers[question.id],
+            marks: predictedMarks
+          }
+        }, { merge: true });
+      }
+
+      // Calculate total marks
+      const totalMarks = predictedMarksArray.reduce((acc, curr) => acc + curr, 0);
+
+      // Save total marks in Firestore
+      await setDoc(userAnswersRef, { totalMarks }, { merge: true });
+
+      setTotalMarks(totalMarks);
+      alert("Exam submitted successfully!");
+      // setIsDialogOpen(false);
+      // router.push('/studentDashboard');
     } catch (error) {
-      console.error("Error predicting marks or saving data:", error);
-      alert("An error occurred while submitting your answer.");
+      console.error("Error submitting answers:", error);
+      alert("An error occurred while submitting the exam.");
     }
   };
 
@@ -134,15 +190,10 @@ export default function QuestionList({ questions, subjectName }: QuestionListPro
                 value={answers[selectedQuestion.id] || ''}
                 onChange={handleAnswerChange}
               />
-              {selectedQuestion.predictedMarks !== undefined && (
-                <p className="mt-4 text-green-500">
-                  Predicted Marks: {selectedQuestion.predictedMarks}
-                </p>
-              )}
             </CardContent>
-            <CardFooter>
+            {/* <CardFooter>
               <Button onClick={handleSubmit}>Submit</Button>
-            </CardFooter>
+            </CardFooter> */}
           </Card>
         )}
       </div>
@@ -155,6 +206,31 @@ export default function QuestionList({ questions, subjectName }: QuestionListPro
         End Exam
       </Button>
       
+      {/* Confirmation Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent>
+        {totalMarks === null ? ( // Show confirmation message before submission
+          <>
+            <p>Do you want to submit your answers?</p>
+            <DialogFooter>
+              <Button variant="secondary" onClick={handleSubmitAll}>Yes, Submit</Button>
+              <Button variant="secondary" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
+            </DialogFooter>
+          </>
+        ) : ( // Show total predicted marks after submission
+          <>
+            <p>Your answers have been submitted successfully!</p>
+            <p className="mt-2 text-green-600">Total Predicted Marks: {totalMarks}</p>
+            <DialogFooter>
+              <Button variant="secondary" onClick={() => router.push('/studentDashboard')}>
+                Close
+              </Button>
+            </DialogFooter>
+          </>
+        )}
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }
