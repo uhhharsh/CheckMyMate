@@ -3,15 +3,18 @@
 import React, { useEffect, useState } from "react";
 import NavBar from "@/components/ui/navBar";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { auth } from "@/firebase/firebaseConfig"; // Adjust the import as needed
+import { auth, db } from "@/firebase/firebaseConfig"; // Adjust the import as needed
 import { useRouter } from "next/navigation";
-import { getFirestore, collection, getDocs } from "firebase/firestore";
+import { getFirestore, collection, query, where, getDocs } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 
 export default function StudentDashboard() {
     const router = useRouter();
     const [exams, setExams] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [results, setResults] = useState<any[]>([]);
+    const [loadingResults, setLoadingResults] = useState(true);
+
 
     const handleLogout = async () => {
         try {
@@ -27,7 +30,9 @@ export default function StudentDashboard() {
         router.push(`/exam?subjectName=${exam.subjectName}`);
     }
 
-    useEffect(() => {
+    useEffect(() => {   
+
+        // Fetching Exams
         const fetchExams = async () => {
             const db = getFirestore();
             const examsCollection = collection(db, "exams"); // Adjust the collection name
@@ -41,6 +46,49 @@ export default function StudentDashboard() {
             console.error("Error fetching exams: ", error);
             setLoading(false);
         });
+
+        // Fetching Results
+        const fetchResults = async () => {
+            const user = auth.currentUser;
+            if (!user) {
+                console.error("No user is currently logged in.");
+                setLoadingResults(false);
+                return;
+            }
+
+            try {
+                const userEmail = user.email;
+                const userAnswersCollection = collection(db, "userAnswers");
+                // Fetch all documents
+                const snapshot = await getDocs(userAnswersCollection);
+        
+                // Filter documents where the ID contains the user's email
+                const results = snapshot.docs
+                    .filter(doc => doc.id.includes(userEmail || ""))
+                    .map(doc => {
+                        const data = doc.data();
+
+                        // Extract subjectName and totalMarks from document ID
+                        const [subjectName] = doc.id.split(":");
+                        const totalMarks = Object.values(data).reduce((sum, item: any) => sum + (item.marks || 0), 0);
+
+                        return { subjectName, totalMarks };
+                    });
+                console.log(results);
+                setResults(results);
+                setLoadingResults(false);
+                return results;
+            } catch (error) {
+                console.error("Error fetching results:", error);
+                return [];
+            }
+        };
+
+        fetchResults().catch(error => {
+            console.error("Error fetching results: ", error);
+            setLoadingResults(false);
+        });
+
     }, []);
 
     return (
@@ -55,6 +103,7 @@ export default function StudentDashboard() {
             {/* dashboard container */}
             <div className="flex min-h-screen w-full">
                 <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-14 w-full">
+                    {/* Dashboard Header */}
                     <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
                         <div className="flex items-center gap-4">
                             <img
@@ -74,6 +123,7 @@ export default function StudentDashboard() {
                             <Button onClick={handleLogout}>Logout</Button>
                         </div>
                     </header>
+                    {/* Current Exams and Result */}
                     <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
                         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                             {/* Current exams */}
@@ -113,33 +163,23 @@ export default function StudentDashboard() {
                                 </CardHeader>
                                 <CardContent>
                                     <div className="grid gap-4">
-                                        <div className="grid grid-cols-[auto_1fr] items-center gap-4 rounded-lg bg-background p-4">
-                                            <div className="rounded-full bg-accent p-2 text-accent-foreground">
-                                                <div className="h-5 w-5" />
+                                    {loadingResults ? (
+                                        <p>Loading...</p>
+                                    ) : results.length === 0 ? (
+                                        <p>No results available</p>
+                                    ) : (
+                                        results.map(result => (
+                                            <div key={result.id} className="grid grid-cols-[auto_1fr] items-center gap-4 rounded-lg bg-background p-4">
+                                                <div className="rounded-full bg-accent p-2 text-accent-foreground">
+                                                    <div className="h-5 w-5" />
+                                                </div>
+                                                <div>
+                                                    <div className="font-medium">{result.subjectName}</div>
+                                                    <div className="text-sm">Total Marks: {result.totalMarks}</div>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <div className="font-medium">Data Structures and Algorithms</div>
-                                                <div className="text-sm text-muted-foreground">Professor: abc</div>
-                                            </div>
-                                        </div>
-                                        <div className="grid grid-cols-[auto_1fr] items-center gap-4 rounded-lg bg-background p-4">
-                                            <div className="rounded-full bg-accent p-2 text-accent-foreground">
-                                                <div className="h-5 w-5" />
-                                            </div>
-                                            <div>
-                                                <div className="font-medium">Computer Networks</div>
-                                                <div className="text-sm text-muted-foreground">Professor: def</div>
-                                            </div>
-                                        </div>
-                                        <div className="grid grid-cols-[auto_1fr] items-center gap-4 rounded-lg bg-background p-4">
-                                            <div className="rounded-full bg-accent p-2 text-accent-foreground">
-                                                <div className="h-5 w-5" />
-                                            </div>
-                                            <div>
-                                                <div className="font-medium">Databases</div>
-                                                <div className="text-sm text-muted-foreground">Professor: ghi</div>
-                                            </div>
-                                        </div>
+                                        ))
+                                    )}
                                     </div>
                                 </CardContent>
                             </Card>

@@ -122,12 +122,12 @@ export default function QuestionList({ questions, subjectName }: QuestionListPro
       // Collect all answers and predicted marks
       for (const question of questions) {
         const response = await axios.post("http://127.0.0.1:8000/predict-marks", {
-          subject: subjectName,
-          marks: question.marks,
-          sample_answer: question.sample_answer,
-          question: question.question,
-          info: question.information,
-          instructions: [question.instructions]
+          // subject: subjectName,
+          // marks: question.marks,
+          // sample_answer: question.sample_answer,
+          // question: question.question,
+          // info: question.information,
+          // instructions: [question.instructions]
         });
 
         const predictedMarks = response.data.predicted_marks;
