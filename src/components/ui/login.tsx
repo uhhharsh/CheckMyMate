@@ -8,7 +8,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 
 import { auth, app } from "@/firebase/firebaseConfig"
-import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { GoogleAuthProvider, signInWithPopup, setPersistence, browserLocalPersistence } from "firebase/auth";
 import { doc, getDoc, setDoc, getFirestore } from 'firebase/firestore';
 
 export default function component({title} : { title : string }) {
@@ -18,6 +18,10 @@ export default function component({title} : { title : string }) {
   const handleGoogle = async () => {
     const provider = new GoogleAuthProvider();
     try {
+      // First set persistence
+      await setPersistence(auth, browserLocalPersistence);
+    
+      // Then handle sign in
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
       console.log("Successfully logged in", user);

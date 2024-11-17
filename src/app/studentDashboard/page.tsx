@@ -3,9 +3,10 @@
 import React, { useEffect, useState } from "react";
 import NavBar from "@/components/ui/navBar";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { auth, db } from "@/firebase/firebaseConfig"; // Adjust the import as needed
+import { auth, db } from "@/firebase/firebaseConfig";
 import { useRouter } from "next/navigation";
-import { getFirestore, collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, getDocs } from "firebase/firestore";
+import { onAuthStateChanged } from "firebase/auth";
 import { Button } from "@/components/ui/button";
 
 export default function StudentDashboard() {
@@ -14,85 +15,91 @@ export default function StudentDashboard() {
     const [loading, setLoading] = useState(true);
     const [results, setResults] = useState<any[]>([]);
     const [loadingResults, setLoadingResults] = useState(true);
+    const [user, setUser] = useState<any>(null);
 
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+            if (currentUser) {
+                setUser(currentUser);
+            } else {
+                router.push('/');
+            }
+        });
+
+        return () => unsubscribe();
+    }, [router]);
+
+    useEffect(() => {
+        // Only fetch data if user is authenticated
+        if (!user) return;
+
+        const fetchData = async () => {
+            try {
+                // Fetch Exams
+                const examsCollection = collection(db, "exams");
+                const examSnapshot = await getDocs(examsCollection);
+                const examList = examSnapshot.docs.map(doc => ({ 
+                    id: doc.id, 
+                    ...doc.data() 
+                }));
+                setExams(examList);
+                setLoading(false);
+
+                // Fetch Results
+                const userAnswersCollection = collection(db, "userAnswers");
+                const snapshot = await getDocs(userAnswersCollection);
+                
+                const userResults = snapshot.docs
+                    .filter(doc => doc.id.includes(user.email || ""))
+                    .map(doc => {
+                        const data = doc.data();
+                        const [subjectName] = doc.id.split(":");
+                        const totalMarks = Object.values(data).reduce((sum, item: any) => 
+                            sum + (item.marks || 0), 0);
+                        
+                        return { 
+                            id: doc.id,
+                            subjectName, 
+                            totalMarks 
+                        };
+                    });
+
+                setResults(userResults);
+                setLoadingResults(false);
+
+            } catch (error) {
+                console.error("Error fetching data:", error);
+                setLoading(false);
+                setLoadingResults(false);
+            }
+        };
+
+        fetchData();
+    }, [user]);
 
     const handleLogout = async () => {
         try {
             await auth.signOut();
             router.push('/');
         } catch (error) {
-            console.log("Error occurred while logging out", error);
+            console.error("Error occurred while logging out", error);
         }
-    }
+    };
 
     const handleViewExam = (exam: any) => {
-        // Redirect to exam page with subjectName and any other parameters
         router.push(`/exam?subjectName=${exam.subjectName}`);
+    };
+
+    // Show loading state while checking authentication
+    if (!user) {
+        return <div className="flex justify-center items-center min-h-screen">
+            Loading...
+        </div>;
     }
-
-    useEffect(() => {   
-
-        // Fetching Exams
-        const fetchExams = async () => {
-            const db = getFirestore();
-            const examsCollection = collection(db, "exams"); // Adjust the collection name
-            const examSnapshot = await getDocs(examsCollection);
-            const examList = examSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            setExams(examList);
-            setLoading(false);
-        };
-
-        fetchExams().catch(error => {
-            console.error("Error fetching exams: ", error);
-            setLoading(false);
-        });
-
-        // Fetching Results
-        const fetchResults = async () => {
-            const user = auth.currentUser;
-            if (!user) {
-                console.error("No user is currently logged in.");
-                setLoadingResults(false);
-                return;
-            }
-
-            try {
-                const userEmail = user.email;
-                const userAnswersCollection = collection(db, "userAnswers");
-                // Fetch all documents
-                const snapshot = await getDocs(userAnswersCollection);
-        
-                // Filter documents where the ID contains the user's email
-                const results = snapshot.docs
-                    .filter(doc => doc.id.includes(userEmail || ""))
-                    .map(doc => {
-                        const data = doc.data();
-
-                        // Extract subjectName and totalMarks from document ID
-                        const [subjectName] = doc.id.split(":");
-                        const totalMarks = Object.values(data).reduce((sum, item: any) => sum + (item.marks || 0), 0);
-
-                        return { subjectName, totalMarks };
-                    });
-                console.log(results);
-                setResults(results);
-                setLoadingResults(false);
-                return results;
-            } catch (error) {
-                console.error("Error fetching results:", error);
-                return [];
-            }
-        };
-
-        fetchResults().catch(error => {
-            console.error("Error fetching results: ", error);
-            setLoadingResults(false);
-        });
-
-    }, []);
 
     return (
         <>
+            {/* Rest of your JSX remains the same */}
             {/* navBar container */}
             <div className="flex flex-col items-center justify-center gap-4 p-4"> 
                 <div className="rounded sticky top-0"> 
@@ -115,14 +122,15 @@ export default function StudentDashboard() {
                                 style={{ aspectRatio: "36/36", objectFit: "cover" }}
                             />
                             <div className="grid gap-0.5">
-                                <div className="font-medium">John Doe</div>
-                                <div className="text-sm text-muted-foreground">Student</div>
+                                <div className="font-medium">{user.displayName || 'Student'}</div>
+                                <div className="text-sm text-muted-foreground">{user.email}</div>
                             </div>
                         </div>
                         <div className="ml-auto flex items-center gap-4">
                             <Button onClick={handleLogout}>Logout</Button>
                         </div>
                     </header>
+                    
                     {/* Current Exams and Result */}
                     <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
                         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -135,7 +143,7 @@ export default function StudentDashboard() {
                                 <CardContent>
                                     <div className="grid gap-4">
                                         {loading ? (
-                                            <p>Loading...</p>
+                                            <p>Loading exams...</p>
                                         ) : exams.length === 0 ? (
                                             <p>No exams available</p>
                                         ) : (
@@ -155,6 +163,7 @@ export default function StudentDashboard() {
                                     </div>
                                 </CardContent>
                             </Card>
+                            
                             {/* Results */}
                             <Card>
                                 <CardHeader>
@@ -163,23 +172,23 @@ export default function StudentDashboard() {
                                 </CardHeader>
                                 <CardContent>
                                     <div className="grid gap-4">
-                                    {loadingResults ? (
-                                        <p>Loading...</p>
-                                    ) : results.length === 0 ? (
-                                        <p>No results available</p>
-                                    ) : (
-                                        results.map(result => (
-                                            <div key={result.id} className="grid grid-cols-[auto_1fr] items-center gap-4 rounded-lg bg-background p-4">
-                                                <div className="rounded-full bg-accent p-2 text-accent-foreground">
-                                                    <div className="h-5 w-5" />
+                                        {loadingResults ? (
+                                            <p>Loading results...</p>
+                                        ) : results.length === 0 ? (
+                                            <p>No results available</p>
+                                        ) : (
+                                            results.map(result => (
+                                                <div key={result.id} className="grid grid-cols-[auto_1fr] items-center gap-4 rounded-lg bg-background p-4">
+                                                    <div className="rounded-full bg-accent p-2 text-accent-foreground">
+                                                        <div className="h-5 w-5" />
+                                                    </div>
+                                                    <div>
+                                                        <div className="font-medium">{result.subjectName}</div>
+                                                        <div className="text-sm">Total Marks: {result.totalMarks}</div>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <div className="font-medium">{result.subjectName}</div>
-                                                    <div className="text-sm">Total Marks: {result.totalMarks}</div>
-                                                </div>
-                                            </div>
-                                        ))
-                                    )}
+                                            ))
+                                        )}
                                     </div>
                                 </CardContent>
                             </Card>
