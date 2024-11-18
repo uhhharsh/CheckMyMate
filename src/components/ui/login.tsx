@@ -6,26 +6,23 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-
-import { auth, app } from "@/firebase/firebaseConfig"
+import { auth, db } from "@/firebase/firebaseConfig"
 import { GoogleAuthProvider, signInWithPopup, setPersistence, browserLocalPersistence } from "firebase/auth";
 import { doc, getDoc, setDoc, getFirestore } from 'firebase/firestore';
 
 export default function component({title} : { title : string }) {
 
   const router = useRouter(); // Initialize useRouter
-  const db = getFirestore(app);
   const handleGoogle = async () => {
     const provider = new GoogleAuthProvider();
     try {
-      // First set persistence
-      await setPersistence(auth, browserLocalPersistence);
     
       // Then handle sign in
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
       console.log("Successfully logged in", user);
       console.log(user.uid);
+
       const userRef = doc(db, 'users', user.uid);
       const userSnap = await getDoc(userRef);
       console.log("userRef is", userRef);

@@ -55,7 +55,7 @@ export default function QuestionList({ questions, subjectName, user }: QuestionL
     setSelectedQuestion(question);
   };
 
-  const handleAnswerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAnswerChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     if (selectedQuestion) {
       setAnswers(prev => ({ ...prev, [selectedQuestion.id]: e.target.value }));
     }
@@ -136,10 +136,17 @@ export default function QuestionList({ questions, subjectName, user }: QuestionL
             </CardHeader>
             <CardContent>
               <p className="mb-4">{selectedQuestion.question}</p>
-              <Input
+              <textarea
                 placeholder="Type your answer here"
                 value={answers[selectedQuestion.id] || ''}
                 onChange={handleAnswerChange}
+                onInput={(e) => {
+                  const textarea = e.target as HTMLTextAreaElement;
+                  textarea.style.height = 'auto'; // Reset height
+                  textarea.style.height = `${textarea.scrollHeight}px`; // Adjust to content height
+                }}
+                className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                rows={1} // Minimum rows
               />
             </CardContent>
           </Card>
