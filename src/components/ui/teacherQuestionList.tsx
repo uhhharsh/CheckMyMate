@@ -1,9 +1,11 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { db } from "@/firebase/firebaseConfig" 
 
@@ -13,7 +15,6 @@ interface Question {
   id: number;
   question: string;
   marks: string;
-  information: string;
   sample_answer: string;
   instructions: string;
 }
@@ -24,11 +25,12 @@ interface TeacherQuestionListProps {
 }
 
 export default function TeacherQuestionList({ numberOfQuestions = 1, subjectName }: TeacherQuestionListProps) {
+  const router = useRouter()
+
   const initialQuestions: Question[] = Array.from({ length: numberOfQuestions }, (_, i) => ({
     id: i + 1,
     question: "",
     marks: "",
-    information: "",
     sample_answer: "",
     instructions: ""
   }))
@@ -40,7 +42,7 @@ export default function TeacherQuestionList({ numberOfQuestions = 1, subjectName
     setSelectedQuestion(question)
   }
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>, field: keyof Question) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, field: keyof Question) => {
     setAllQuestions(prev => 
       prev.map(q => q.id === selectedQuestion.id ? { ...q, [field]: e.target.value } : q)
     )
@@ -55,8 +57,10 @@ export default function TeacherQuestionList({ numberOfQuestions = 1, subjectName
     try {
       await setDoc(doc(db, "exams", subjectName), examData)
       alert("Exam submitted successfully!")
+      router.push('/teacherDashboard')
     } catch (error) {
       console.error("Error submitting exam: ", error)
+      alert("Failed to submit exam. Please try again.")
     }
   }
 
@@ -83,11 +87,11 @@ export default function TeacherQuestionList({ numberOfQuestions = 1, subjectName
             <CardTitle>Question {selectedQuestion.id}</CardTitle>
           </CardHeader>
           <CardContent>
-            <Input
+            <Textarea
               placeholder="Enter question"
               value={allQuestions.find(q => q.id === selectedQuestion.id)?.question || ''}
               onChange={(e) => handleInputChange(e, 'question')}
-              className="mb-4"
+              className="mb-4 min-h-[100px]"
             />
             <Input
               placeholder="Enter marks"
@@ -95,23 +99,17 @@ export default function TeacherQuestionList({ numberOfQuestions = 1, subjectName
               onChange={(e) => handleInputChange(e, 'marks')}
               className="mb-4"
             />
-            <Input
-              placeholder="Enter information"
-              value={allQuestions.find(q => q.id === selectedQuestion.id)?.information || ''}
-              onChange={(e) => handleInputChange(e, 'information')}
-              className="mb-4"
-            />
-            <Input
+            <Textarea
               placeholder="Enter sample answer"
               value={allQuestions.find(q => q.id === selectedQuestion.id)?.sample_answer || ''}
               onChange={(e) => handleInputChange(e, 'sample_answer')}
-              className="mb-4"
+              className="mb-4 min-h-[150px]"
             />
-            <Input
+            <Textarea
               placeholder="Enter instructions"
               value={allQuestions.find(q => q.id === selectedQuestion.id)?.instructions || ''}
               onChange={(e) => handleInputChange(e, 'instructions')}
-              className="mb-4"
+              className="mb-4 min-h-[100px]"
             />
           </CardContent>
           <CardFooter>
