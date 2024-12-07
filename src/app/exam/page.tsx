@@ -77,6 +77,7 @@ export default function Exam() {
                 questions={questions} 
                 subjectName={subjectName}
                 user={user} // Pass user to QuestionList
+                examDuration={2}
             />
         </>
     );

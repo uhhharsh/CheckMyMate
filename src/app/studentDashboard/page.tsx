@@ -54,8 +54,7 @@ export default function StudentDashboard() {
                     .map(doc => {
                         const data = doc.data();
                         const [subjectName] = doc.id.split(":");
-                        const totalMarks = Object.values(data).reduce((sum, item: any) => 
-                            sum + (item.marks || 0), 0);
+                        const totalMarks = data.totalMarks || -1;
                         
                         return { 
                             id: doc.id,
@@ -63,6 +62,9 @@ export default function StudentDashboard() {
                             totalMarks 
                         };
                     });
+                
+                console.log("userResults are : ", userResults);
+                
 
                 setResults(userResults);
                 setLoadingResults(false);

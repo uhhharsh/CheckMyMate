@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,7 @@ interface QuestionListProps {
   questions: Question[];
   subjectName: string;
   user: any; 
+  examDuration: number; // Duration in minutes
 }
 
 // API Prediction Input Interface
@@ -33,16 +34,46 @@ interface PredictionInput {
   sample_answer: string;
   question: string;
   student_answer: string;
-  instructions: string; // Change from string[] to string
+  instructions: string;
 }
 
-export default function QuestionList({ questions, subjectName, user }: QuestionListProps) {
+export default function QuestionList({ 
+  questions, 
+  subjectName, 
+  user, 
+  examDuration = 60 // Default to 60 minutes if not specified
+}: QuestionListProps) {
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(questions[0] || null);
   const [answers, setAnswers] = useState<{ [key: number]: string }>({});
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
   const [totalMarks, setTotalMarks] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [timeRemaining, setTimeRemaining] = useState<number>(examDuration * 60); // Convert minutes to seconds
   const router = useRouter();
+
+  // Timer effect
+  useEffect(() => {
+    // If no time left, auto submit
+    if (timeRemaining <= 0) {
+      handleSubmitAll();
+      return;
+    }
+
+    // Create timer interval
+    const timerId = setInterval(() => {
+      setTimeRemaining(prev => prev - 1);
+    }, 1000);
+
+    // Cleanup interval on unmount or when time is up
+    return () => clearInterval(timerId);
+  }, [timeRemaining]);
+
+  // Format time remaining into minutes:seconds
+  const formatTime = (totalSeconds: number) => {
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  };
 
   // Update selected question when questions prop changes
   useEffect(() => {
@@ -96,7 +127,7 @@ export default function QuestionList({ questions, subjectName, user }: QuestionL
             student_answer: answers[question.id] || '',
             instructions: Array.isArray(question.instructions) 
             ? question.instructions.join('\n') 
-            : (question.instructions || '') // If it's already a string or undefined
+            : (question.instructions || '')
           };
           
           console.log("Prediction Input:", predictionInput);
@@ -134,9 +165,11 @@ export default function QuestionList({ questions, subjectName, user }: QuestionL
       console.log("Flattened Predicted Marks Array:", flattenedMarks);
       console.log("Total Marks Calculated:", totalMarks);
       
-
       setTotalMarks(totalMarks);
       setIsDialogOpen(true);
+      
+      // Redirect to dashboard after submission
+      router.push('/studentDashboard');
     } catch (error) {
       console.error("Error submitting answers:", error);
       alert("An error occurred while submitting the exam.");
@@ -150,7 +183,12 @@ export default function QuestionList({ questions, subjectName, user }: QuestionL
   }
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen relative">
+      {/* Timer Display */}
+      <div className="absolute top-4 right-4 bg-red-500 text-white px-4 py-2 rounded">
+        Time Remaining: {formatTime(timeRemaining)}
+      </div>
+
       {/* Left side: Scrollable list of questions */}
       <div className="w-1/3 border-r">
         <ScrollArea className="h-full">
